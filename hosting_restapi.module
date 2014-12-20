@@ -29,21 +29,14 @@ function hosting_restapi_menu() {
 }
 
 /**
- * Access check, using the $key and $secret.
+ * Access check, using the $key and optional $secret.
  * This is extremely basic, since not planning on an open service.
  * We are only having two trusted systems communicate with each other.
+ *
+ * TODO: Implement basic check with an API key variable
  */
-function hosting_restapi_check_access($key, $secret) {
-  global $civicrmhosting_key;
-  global $civicrmhosting_secret;
-
-  if (empty($key) || empty($secret)) {
-    throw new Exception('Access denied. Missing credentials.');
-  }
-
-  if ($key != $civicrmhosting_key && $secret != $civicrmhosting_secret) {
-    throw new Exception('Access denied. Invalid credentials.');
-  }
+function hosting_restapi_check_access($key = NULL, $secret = NULL) {
+  module_invoke_all('hosting_restapi_check_access', $key, $secret);
 
   return TRUE;
 }

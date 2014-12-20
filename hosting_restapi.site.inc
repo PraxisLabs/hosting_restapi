@@ -40,8 +40,8 @@ function hosting_restapi_site() {
 function hosting_restapi_site_get() {
   // FIXME: we want the user to have live updates on the status of the site,
   // so either we grant some temporary access, or we grant to anons.
-  // TODO: use the invoice_id
-  // hosting_restapi_check_access($_GET['key'], $_GET['secret']);
+
+  hosting_restapi_check_access($_GET['key'], $_GET['secret']);
 
   $url = $_GET['url'];
   $invoice_id = (isset($_GET['invoice']) ? $_GET['invoice'] : NULL);
@@ -114,7 +114,7 @@ function hosting_restapi_site_get() {
  * Implements the 'site POST' API (create).
  */
 function hosting_restapi_site_post() {
-  // hosting_restapi_check_access($_POST['key'], $_POST['secret']);
+  hosting_restapi_check_access($_POST['key'], $_POST['secret']);
 
   // TODO : check if URL format is OK (i.e. no spaces, etc)
   $url = check_plain($_POST['url']);
@@ -229,21 +229,7 @@ function hosting_restapi_is_valid_invoice($invoice_id) {
     throw new Exception('Invalid invoice ID.');
   }
 
+  module_invoke_all("hosting_restapi_validate_id", $invoice_id);
+
   return TRUE;
-
-  // Check that the invoice_id is legit.. supporting only CiviCRM for now.
-  require_once drupal_get_path('module', 'hosting_restapi') . '/civicrm.api.php';
-  $api = new civicrm_api3(array(
-    'server' => variable_get('hosting_restapi_crmhost', NULL),
-    'api_key' => variable_get('hosting_restapi_crmapikey', NULL),
-    'key' => variable_get('hosting_restapi_crmkey', NULL),
-  ));
-
-  $api->Contribution->Get(array('invoice_id' => $invoice_id));
-
-  if ($api->count == 1) {
-    return TRUE;
-  }
-
-  throw new Exception('Could not lookup invoice.');
 }

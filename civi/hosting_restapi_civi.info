@@ -1,0 +1,7 @@
+name = CiviHosting REST API
+description = CiviCRM feature for hosting_restapi
+package = Aegir
+dependencies[] = hosting
+dependencies[] = hosting_saas
+dependencies[] = hosting_restapi
+core = 6.x
