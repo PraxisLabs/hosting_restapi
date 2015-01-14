@@ -87,3 +87,32 @@ function hosting_restapi_post_hosting_import_task($task, $data) {
     hosting_restapi_log($task->context_options['uri'], HOSTING_RESTAPI_ORDER_STATUS_IMPORT_COMPLETE, 'hosting_restapi_post_hosting_import_task completed');
   }
 }
+
+function hosting_restapi_check_capacity($set_error = FALSE) {
+  $max_saas_capacity = variable_get('hosting_saas_max_capacity', 0);
+
+  $target_platform = variable_get('hosting_saas_target_platform', NULL);
+  if ($target_platform === NULL) {
+    if ($set_error) {
+      form_set_error('', t('Service not configured!'));
+    }
+
+    return FALSE;
+  }
+
+  if (intval($max_saas_capacity) <= 0) {
+    return TRUE; // Okay
+  } 
+
+  $count = hosting_site_count($target_platform);
+  if ($count >= $max_saas_capacity) {
+    watchdog('hosting_restapi', t('Max capacity reached'), array(), WATCHDOG_ALERT);
+
+    return FALSE;
+  }
+  else {
+    watchdog('hosting_restapi', t('Count / capacity: ' . $count . ' / ' . $max_saas_capacity));
+  }
+
+
+}

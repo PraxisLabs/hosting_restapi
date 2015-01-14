@@ -143,6 +143,11 @@ function hosting_restapi_site_post() {
   $new_platform_nid = variable_get('hosting_saas_target_platform', NULL);
   $new_db_server = variable_get('hosting_saas_db_server', 2); // 2 = DB server on single-server default setups
 
+  if (hosting_restapi_check_capacity() === FALSE) {
+    throw new Exception('Service has reached max capacity.');
+  }
+  
+
   // TODO: Don't do hosting_add_task immediately, implement hook instead
   $result = hosting_add_task($template_nid, 'clone', array(
     'new_uri' => $url,
