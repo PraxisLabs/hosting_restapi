@@ -146,19 +146,8 @@ function hosting_restapi_site_post() {
   if (hosting_restapi_check_capacity() === FALSE) {
     throw new Exception('Service has reached max capacity.');
   }
-  
 
-  // TODO: Don't do hosting_add_task immediately, implement hook instead
-  $result = hosting_add_task($template_nid, 'clone', array(
-    'new_uri' => $url,
-    // 2 is the default nid for single-server setups
-    'new_db_server' => $new_db_server,
-    'target_platform' => $new_platform_nid,
-    'aliases' => '',
-    'redirection' => '',
-    'ssl_enabled' => 2, // FIXME : Use template site's setting?
-    'ssl_key' => 5, // FIXME : Use template site's ssl_key? (Assuming SNI)
-  ));
+  module_invoke_all("hosting_restapi_create_site", $url);
 
   hosting_restapi_log($url, HOSTING_RESTAPI_ORDER_STATUS_NEW, t('The order is valid and has been created.'));
   return array('status' => 'success', 'data' => $result);
@@ -193,23 +182,6 @@ function _hosting_restapi_is_allowed_creation($url) {
     }
   }
 
-  $template_site_nid = variable_get('hosting_saas_template_site_nid', NULL);
-
-  // This tells us whether there's a clone task running or queued
-  // for the site
-  $sql = "SELECT n.nid as nid, ht.rid, task_status, executed
-          FROM hosting_task ht INNER JOIN node n
-          ON ht.nid = n.nid AND ht.vid = n.vid
-          WHERE ht.rid = %d AND ht.task_type = 'clone'
-          AND (ht.task_status = -1 OR ht.task_status = 0)
-          LIMIT 1";
-  
-  // TRUE = Go ahead, FALSE = stop
-  if (db_fetch_object(db_query($sql, $template_site_nid))) {
-    throw new Exception('Server is busy (clone operation already in progress).');
-  }
-
-  watchdog('hosting_restapi', '_hosting_restapi_is_allowed_creation');
   return $site;
 }
 
