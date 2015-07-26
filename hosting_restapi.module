@@ -39,20 +39,6 @@ function hosting_restapi_menu() {
 }
 
 /**
- * Implementation of hook_hosting_tasks
- */
-function hosting_restapi_hosting_tasks() {
-  $tasks = array();
-
-  $tasks['site']['symbiotic-login'] = array(
-     'title' => t('Reset uid2 password'),
-     'description' => t('Generate a one-time login reset url for this site for uid 2.'),
-  );
-
-  return $tasks;
-}
-
-/**
  * Access check, using the $key and optional $secret.
  * This is extremely basic, since not planning on an open service.
  * We are only having two trusted systems communicate with each other.
@@ -159,46 +145,7 @@ function hosting_restapi_post_hosting_import_task($task, $data) {
   if ($task->ref->type == 'site') {
     hosting_restapi_log($task->context_options['uri'], HOSTING_RESTAPI_ORDER_STATUS_IMPORT_COMPLETE, 'hosting_restapi_post_hosting_import_task completed');
 
-    // Reset the login link
-    // Next step in hosting_restapi_post_hosting_login_reset_task
-    hosting_add_task($task->ref->nid, 'symbiotic-login');
-  }
-}
-
-/**
- * Implements hook_post_hosting_TASK_TYPE_task().
- */
-function hosting_restapi_post_hosting_symbiotic_login_task($task, $data) {
-  if ($task->ref->type == 'site') {
-    hosting_restapi_log($task->ref->title, HOSTING_RESTAPI_ORDER_STATUS_LOGIN_RESET_COMPLETE, 'hosting_restapi_post_hosting_symbiotic_login_task completed');
-
-    $task->ref->no_verify = TRUE;
-    node_save($task->ref);
-
-    $context = $data['context'];
-    if ($context['symbiotic_login']) {
-      // we need to store the timestamp too because expire only means it can be deleted
-      // after an amount of time, not will be deleted.
-      $cache = array(
-        'expire' => strtotime("+24 hours"),
-        'link' => $context['symbiotic_login'],
-      );
-      cache_set('hosting:site:' . $task->ref->nid . ':symbiotic_login', $cache, 'cache', $cache['expire'] );
-    }
-  }
-}
-
-/**
- * Implements hook_node_presave().
- *
- * FIXME: specific to SymbioTIC: if the domain is for a known SSL wildcard
- * domain, require ssl to be enabled.
- */
-function hosting_restapi_node_presave($node) {
-  if ($node->type == 'site' && empty($node->nid)) {
-    if (preg_match('/.symbiotic.coop$/', $node->title)) {
-      $node->ssl_enabled = 2;
-      $node->ssl_key = 25; // FIXME HARDCODE
-    }
+    // Allow other modules to trigger tasks after the status is updated
+    module_invoke_all('hosting_restapi_post_task_updated', $task, $data);
   }
 }
