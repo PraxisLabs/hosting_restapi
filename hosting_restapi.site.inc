@@ -196,16 +196,29 @@ function hosting_restapi_site_post() {
     throw new Exception('Service has reached max capacity.');
   }
 
-  $result = hosting_add_task($template_nid, 'clone', array(
+  // This is all we really need
+  $clone_args = array(    'new_uri' => $url,
     'new_uri' => $url,
-    // 2 is the default nid for single-server setups
     'new_db_server' => $new_db_server,
     'target_platform' => $new_platform_nid,
     'aliases' => '',
     'redirection' => '',
-    'ssl_enabled' => 2, // FIXME : Use template site's setting?
-    'ssl_key' => 25, // FIXME : Use template site's ssl_key? (Assuming SNI)
-  ));
+  );
+
+  // Use the template site's SSL settings
+  $template_node = node_load($template_nid);
+  if (!empty($template_node)) {
+    // Not all sites will automatically have an SSL object property...
+    if (isset($template_node->ssl_enabled) && $template_node->ssl_enabled) {
+      $clone_args['ssl_enabled'] = $template_node->ssl_enabled;
+      $clone_args['ssl_key'] = $template_node->ssl_key;
+    }
+  } else {
+    // Nothing to clone
+    throw new Exception(t('Service is misconfigured (missing template node).'));
+  }
+
+  $result = hosting_add_task($template_nid, 'clone', $clone_args);
 
   hosting_restapi_log($url, HOSTING_RESTAPI_ORDER_STATUS_NEW, t('The order is valid and has been created.'));
   return array('status' => 'success', 'data' => $result);
