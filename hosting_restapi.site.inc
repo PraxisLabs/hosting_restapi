@@ -220,6 +220,8 @@ function hosting_restapi_site_post() {
 
   $result = hosting_add_task($template_nid, 'clone', $clone_args);
 
+  module_invoke_all('hosting_restapi_task_added', $result);
+
   hosting_restapi_log($url, HOSTING_RESTAPI_ORDER_STATUS_NEW, t('The order is valid and has been created.'));
   return array('status' => 'success', 'data' => $result);
 }
